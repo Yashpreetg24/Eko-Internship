@@ -34,6 +34,14 @@ def get_employee_checklist(employee_id: str, db: Session = Depends(get_db)):
     checklists = db.query(Checklist).filter(Checklist.employee_id == employee_id).all()
     return checklists
 
+@router.get("/employees/{employee_id}/reminders")
+def get_employee_reminders(employee_id: str, db: Session = Depends(get_db)):
+    emp = db.query(Employee).filter(Employee.employee_id == employee_id).first()
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    pending = db.query(Checklist).filter(Checklist.employee_id == employee_id, Checklist.completed == False).all()
+    return pending
+
 @router.get("/employees/{employee_id}/progress")
 def get_employee_progress(employee_id: str, db: Session = Depends(get_db)):
     emp = db.query(Employee).filter(Employee.employee_id == employee_id).first()

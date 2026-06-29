@@ -7,8 +7,9 @@ const ChatPortal = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [reminders, setReminders] = useState([]);
 
-  const handleIdentify = (e) => {
+  const handleIdentify = async (e) => {
     e.preventDefault();
     if (employeeId.trim()) {
       setIsIdentified(true);
@@ -17,6 +18,16 @@ const ChatPortal = () => {
         text: `Hi ${employeeId} 👋 How can I help you with your onboarding today?`,
         type: 'greeting'
       }]);
+      
+      try {
+        const res = await fetch(`http://localhost:8000/employees/${employeeId}/reminders`);
+        if (res.ok) {
+          const data = await res.json();
+          setReminders(data);
+        }
+      } catch(err) {
+        console.error("Failed to fetch reminders");
+      }
     }
   };
 
@@ -82,6 +93,21 @@ const ChatPortal = () => {
   return (
     <div className="flex flex-col h-full bg-white relative">
       <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+        
+        {reminders.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-sm mb-6 max-w-3xl flex items-start gap-3">
+            <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={20} />
+            <div>
+              <h3 className="font-semibold text-amber-800 text-sm mb-1">⚠️ Pending Tasks Detected</h3>
+              <ul className="text-sm text-amber-700 list-disc list-inside space-y-1">
+                {reminders.map((r, i) => (
+                  <li key={i}>{r.task_name} (Due: {new Date(r.due_date).toLocaleDateString()})</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-3xl w-full flex gap-4 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
