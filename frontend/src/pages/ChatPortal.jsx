@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Send, CheckCircle2, Circle, AlertCircle, Terminal, BookOpen, Loader } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const ChatPortal = () => {
   const [employeeId, setEmployeeId] = useState('');
   const [isIdentified, setIsIdentified] = useState(false);
@@ -20,7 +22,7 @@ const ChatPortal = () => {
       }]);
       
       try {
-        const res = await fetch(`http://localhost:8000/employees/${employeeId}/reminders`);
+        const res = await fetch(`${API_URL}/employees/${employeeId}/reminders`);
         if (res.ok) {
           const data = await res.json();
           setReminders(data);
@@ -41,7 +43,7 @@ const ChatPortal = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/agent/chat', {
+      const response = await fetch(`${API_URL}/agent/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ employee_id: employeeId, message: userMessage.text })

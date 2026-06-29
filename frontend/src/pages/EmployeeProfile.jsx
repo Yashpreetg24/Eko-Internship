@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { User, Briefcase, Calendar, Mail, CheckCircle2, Circle, Laptop, Shield, MessageSquare, Loader } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const EmployeeProfile = () => {
   const { id } = useParams();
   const [employee, setEmployee] = useState(null);
@@ -13,9 +15,9 @@ const EmployeeProfile = () => {
     const fetchEmployee = async () => {
       try {
         const [empRes, checkRes, logsRes] = await Promise.all([
-          fetch(`http://localhost:8000/employees/${id}`),
-          fetch(`http://localhost:8000/employees/${id}/checklist`),
-          fetch(`http://localhost:8000/employees/${id}/logs`)
+          fetch(`${API_URL}/employees/${id}`),
+          fetch(`${API_URL}/employees/${id}/checklist`),
+          fetch(`${API_URL}/employees/${id}/logs`)
         ]);
         
         if (empRes.ok) setEmployee(await empRes.json());

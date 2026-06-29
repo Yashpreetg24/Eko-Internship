@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Filter, CheckCircle, Loader } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const EscalationDashboard = () => {
   const [escalations, setEscalations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,7 +15,7 @@ const EscalationDashboard = () => {
 
   const fetchEscalations = async () => {
     try {
-      const res = await fetch('http://localhost:8000/escalations');
+      const res = await fetch(`${API_URL}/escalations`);
       const data = await res.json();
       setEscalations(data);
     } catch (err) {
@@ -25,7 +27,7 @@ const EscalationDashboard = () => {
 
   const handleResolve = async (id) => {
     try {
-      await fetch(`http://localhost:8000/escalations/${id}`, {
+      await fetch(`${API_URL}/escalations/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'resolved' })

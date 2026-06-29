@@ -4,6 +4,8 @@ import { Users, CheckCircle, Clock, AlertTriangle, TrendingUp, Loader } from 'lu
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const HRDashboard = () => {
   const [data, setData] = useState(null);
   const [employees, setEmployees] = useState([]);
@@ -14,9 +16,9 @@ const HRDashboard = () => {
     const fetchData = async () => {
       try {
         const [analyticsRes, employeesRes, escalationsRes] = await Promise.all([
-          fetch('http://localhost:8000/analytics'),
-          fetch('http://localhost:8000/employees'),
-          fetch('http://localhost:8000/escalations')
+          fetch(`${API_URL}/analytics`),
+          fetch(`${API_URL}/employees`),
+          fetch(`${API_URL}/escalations`)
         ]);
         
         const analyticsData = await analyticsRes.json();
