@@ -3,6 +3,7 @@ from typing import TypedDict, List, Dict, Any, Optional
 class AgentState(TypedDict):
     employee_id: str
     message: str
+    chat_history: List[Dict[str, str]]
     intent: Optional[str]
     employee_record: Optional[Dict[str, Any]]
     sop_chunks: Optional[List[Dict[str, str]]]

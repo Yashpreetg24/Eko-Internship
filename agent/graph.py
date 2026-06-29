@@ -100,12 +100,17 @@ def generate_response(state: AgentState):
         state["response"] = "I need to escalate this issue to our human team. A ticket has been created."
         return state
         
+    history_text = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in state.get('chat_history', [])])
+    
     prompt = f"""
     You are an autonomous HR onboarding AI for EmployeeClaw.
     Employee Name: {state['employee_record']['name']}
     Intent: {state['intent']}
     SOP Context: {state['sop_chunks']}
     Current Status: {state['current_status']}
+    
+    Conversation History:
+    {history_text}
     
     Employee Message: {state['message']}
     

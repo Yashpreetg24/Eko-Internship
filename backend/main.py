@@ -39,9 +39,15 @@ def knowledge_search(request: SearchQuery):
 
 @app.post("/agent/chat")
 def agent_chat(request: ChatRequest):
+    from agent.memory import get_history, add_message
+    
+    # Retrieve chat history
+    history = get_history(request.employee_id)
+    
     initial_state = {
         "employee_id": request.employee_id,
         "message": request.message,
+        "chat_history": history,
         "intent": None,
         "employee_record": None,
         "sop_chunks": None,
@@ -56,10 +62,16 @@ def agent_chat(request: ChatRequest):
         "sources": []
     }
     
+    # Run workflow
     result = agent_app.invoke(initial_state)
+    response_text = result.get("response", "No response generated")
+    
+    # Add to memory
+    add_message(request.employee_id, "user", request.message)
+    add_message(request.employee_id, "ai", response_text)
     
     return {
-        "response": result.get("response", "No response generated"),
+        "response": response_text,
         "workflow_trace": result.get("workflow_trace", []),
         "checklist": result.get("checklist", []),
         "progress": result.get("progress", 0),
