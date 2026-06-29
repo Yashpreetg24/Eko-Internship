@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from backend.utils.vector_db_manager import VectorDB
 from agent.graph import agent_app
+from backend.routes.api import router as api_router
 
 app = FastAPI(title="EmployeeClaw", description="Autonomous Employee Onboarding AI Agent")
 
@@ -17,6 +18,8 @@ app.add_middleware(
 
 # Load Vector DB instance
 vector_db = VectorDB()
+
+app.include_router(api_router)
 
 class SearchQuery(BaseModel):
     query: str
