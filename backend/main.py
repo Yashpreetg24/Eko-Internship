@@ -10,7 +10,7 @@ app = FastAPI(title="EmployeeClaw", description="Autonomous Employee Onboarding 
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:5174", "http://localhost:5175"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -63,7 +63,12 @@ def agent_chat(request: ChatRequest):
     }
     
     # Run workflow
-    result = agent_app.invoke(initial_state)
+    try:
+        result = agent_app.invoke(initial_state)
+    except Exception as e:
+        import traceback
+        return {"response": "Error: " + str(e), "workflow_trace": traceback.format_exc().splitlines()}
+
     response_text = result.get("response", "No response generated")
     
     # Add to memory

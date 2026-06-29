@@ -1,9 +1,9 @@
 import sys
 import os
-import json
-from typing import TypedDict, List
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
+from dotenv import load_dotenv
+load_dotenv()
 from langchain_core.messages import HumanMessage, SystemMessage
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -18,7 +18,26 @@ from agent.tools.logger import log_interaction
 
 # Setup LLM
 # In production, ensure OPENAI_API_KEY is in environment
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+api_key = os.environ.get("OPENAI_API_KEY", "")
+if not api_key or api_key.startswith("your-"):
+    class MockLLM:
+        def invoke(self, messages):
+            from langchain_core.messages import AIMessage
+            prompt = " ".join([m.content for m in messages])
+            if "Classify the following employee message" in prompt:
+                text = prompt.lower()
+                if "laptop" in text or "asset" in text: return AIMessage(content="ASSET_REQUEST")
+                elif "policy" in text or "attendance" in text: return AIMessage(content="POLICY_QUESTION")
+                elif "payroll" in text or "salary" in text: return AIMessage(content="PAYROLL_ISSUE")
+                else: return AIMessage(content="ONBOARDING_QUERY")
+            elif "Score your confidence" in prompt:
+                return AIMessage(content="90")
+            else:
+                return AIMessage(content="Based on the HR SOPs and your record, here is the information: Employees are expected to maintain core hours between 10 AM and 4 PM. Let me know if you need more details.")
+    llm = MockLLM()
+    print("WARNING: Using MockLLM because OPENAI_API_KEY is invalid or missing.")
+else:
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 def classify_intent(state: AgentState):
     prompt = f"""
@@ -145,7 +164,7 @@ def confidence_check(state: AgentState):
     response = llm.invoke([HumanMessage(content=prompt)])
     try:
         conf = int(response.content.strip())
-    except:
+    except ValueError:
         conf = 85
         
     state["confidence"] = conf
