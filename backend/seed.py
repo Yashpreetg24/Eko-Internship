@@ -78,7 +78,7 @@ def seed_data():
     tasks = ["Submit Documents", "Laptop Allocation", "Email Creation", "Slack Setup", "VPN Setup", "Payroll Onboarding", "Insurance Form"]
     checklists = []
     for emp in employees:
-        num_completed = int(emp.onboarding_progress / 100 * len(tasks))
+        num_completed = int(emp.onboarding_progress / 100 * len(tasks)) # type: ignore
         for i, task in enumerate(tasks):
             completed = i < num_completed
             checklists.append(Checklist(

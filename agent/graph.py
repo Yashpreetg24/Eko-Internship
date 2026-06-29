@@ -25,10 +25,10 @@ if not api_key or api_key.startswith("your-"):
             from langchain_core.messages import AIMessage
             prompt = " ".join([m.content for m in messages])
             if "Classify the following employee message" in prompt:
-                text = prompt.lower()
-                if "laptop" in text or "asset" in text: return AIMessage(content="ASSET_REQUEST")
-                elif "policy" in text or "attendance" in text: return AIMessage(content="POLICY_QUESTION")
-                elif "payroll" in text or "salary" in text: return AIMessage(content="PAYROLL_ISSUE")
+                msg_part = prompt.split("Message:")[-1].lower()
+                if "laptop" in msg_part or "asset" in msg_part: return AIMessage(content="ASSET_REQUEST")
+                elif "policy" in msg_part or "attendance" in msg_part: return AIMessage(content="POLICY_QUESTION")
+                elif "payroll" in msg_part or "salary" in msg_part: return AIMessage(content="PAYROLL_ISSUE")
                 else: return AIMessage(content="ONBOARDING_QUERY")
             elif "Score your confidence" in prompt:
                 return AIMessage(content="90")
@@ -49,7 +49,7 @@ def classify_intent(state: AgentState):
     Return ONLY the exact intent string.
     """
     response = llm.invoke([HumanMessage(content=prompt)])
-    intent = response.content.strip()
+    intent = str(response.content).strip()
     state["intent"] = intent
     state["workflow_trace"] = [f"✓ Intent classified: {intent}"]
     return state
@@ -71,8 +71,9 @@ def retrieve_sop(state: AgentState):
         state["workflow_trace"].append("✗ SOP not found")
         state["sources"] = []
     else:
-        state["sop_chunks"] = sops
-        state["sources"] = [s["filename"] for s in sops]
+        sops_list = sops if isinstance(sops, list) else []
+        state["sop_chunks"] = sops_list # type: ignore
+        state["sources"] = [str(s.get("filename", "")) for s in sops_list if isinstance(s, dict)]
         state["workflow_trace"].append(f"✓ SOP retrieved: {', '.join(state['sources'])}")
     return state
 
@@ -80,16 +81,16 @@ def check_status(state: AgentState):
     if state["escalated"]:
         return state
     
-    intent = state["intent"]
-    emp = state["employee_record"]
+    intent = state.get("intent")
+    emp = state.get("employee_record") or {}
     status_str = "Checked general status."
     
     if intent == "ASSET_REQUEST":
-        status_str = f"Laptop allocated: {emp['laptop_allocated']}"
+        status_str = f"Laptop allocated: {emp.get('laptop_allocated')}"
     elif intent == "ACCESS_ISSUE":
-        status_str = f"Slack access: {emp['slack_access']}, VPN: {emp['vpn_setup']}"
+        status_str = f"Slack access: {emp.get('slack_access')}, VPN: {emp.get('vpn_setup')}"
     elif intent == "PAYROLL_ISSUE":
-        status_str = f"Payroll enabled: {emp['payroll_enabled']}"
+        status_str = f"Payroll enabled: {emp.get('payroll_enabled')}"
         
     state["current_status"] = status_str
     state["workflow_trace"].append(f"✓ Status checked: {status_str}")
@@ -99,8 +100,8 @@ def determine_action(state: AgentState):
     if state["escalated"]:
         return state
         
-    intent = state["intent"]
-    emp = state["employee_record"]
+    intent = state.get("intent")
+    emp = state.get("employee_record") or {}
     action = "No specific action required."
     
     if intent == "PAYROLL_ISSUE":
@@ -121,10 +122,11 @@ def generate_response(state: AgentState):
         
     history_text = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in state.get('chat_history', [])])
     
+    emp = state.get("employee_record") or {}
     prompt = f"""
     You are an autonomous HR onboarding AI for EmployeeClaw.
-    Employee Name: {state['employee_record']['name']}
-    Intent: {state['intent']}
+    Employee Name: {emp.get('name', 'Employee')}
+    Intent: {state.get('intent')}
     SOP Context: {state['sop_chunks']}
     Current Status: {state['current_status']}
     
@@ -136,7 +138,7 @@ def generate_response(state: AgentState):
     Generate a helpful, professional, personalized response addressing their query using the SOP context.
     """
     response = llm.invoke([SystemMessage(content="You are EmployeeClaw HR Assistant."), HumanMessage(content=prompt)])
-    state["response"] = response.content.strip()
+    state["response"] = str(response.content).strip()
     return state
 
 def update_checklist(state: AgentState):
@@ -144,7 +146,7 @@ def update_checklist(state: AgentState):
         checklist = get_checklist(state["employee_id"])
         progress = get_progress(state["employee_id"])
         state["checklist"] = checklist
-        state["progress"] = progress.get("progress", 0)
+        state["progress"] = int(progress.get("progress", 0)) if isinstance(progress, dict) else 0 # type: ignore
     else:
         state["checklist"] = []
         state["progress"] = 0
@@ -163,7 +165,7 @@ def confidence_check(state: AgentState):
     """
     response = llm.invoke([HumanMessage(content=prompt)])
     try:
-        conf = int(response.content.strip())
+        conf = int(str(response.content).strip())
     except ValueError:
         conf = 85
         
@@ -200,9 +202,9 @@ def escalate(state: AgentState):
 def log_interaction_node(state: AgentState):
     log_interaction(
         employee_id=state["employee_id"],
-        action=state.get("intent", "UNKNOWN"),
+        action=state.get("intent") or "UNKNOWN",
         status="Escalated" if state.get("escalated") else "Resolved",
-        confidence=state.get("confidence", 0),
+        confidence=state.get("confidence") or 0,
         resolved=not state.get("escalated")
     )
     state["workflow_trace"].append("✓ Interaction logged")
@@ -225,7 +227,7 @@ def should_escalate_after_confidence(state: AgentState):
     return "log_interaction"
 
 # Build Graph
-workflow = StateGraph(AgentState)
+workflow = StateGraph(AgentState) # type: ignore
 
 workflow.add_node("classify_intent", classify_intent)
 workflow.add_node("retrieve_employee", retrieve_employee)

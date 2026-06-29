@@ -63,7 +63,7 @@ class VectorDB:
             self.documents = pickle.load(f)
             
     def search(self, query: str, top_k: int = 3):
-        query_embedding = model.encode([query]).astype('float32')
+        query_embedding = np.array(model.encode([query])).astype('float32')
         distances, indices = self.index.search(query_embedding, top_k)
         
         results = []
